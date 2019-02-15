@@ -75,7 +75,7 @@ def print_results(name,y_true,y_pred1,y_pred2):
     print("\nMetrics : \n",precision_recall_fscore_support(y_true, y_pred1))
     print("\nClassification Report : \n",classification_report(y_true, y_pred1))
 
-def models(x_train,x_test,y_train,y_test,algo):         # Testing with ML Algorithms
+def models(x_train,x_test,y_train,y_test,algo):         # Model Building with ML Algorithms
 
     if algo == 1:
         from sklearn import naive_bayes
@@ -117,7 +117,7 @@ def models(x_train,x_test,y_train,y_test,algo):         # Testing with ML Algori
     else:
         print("Invalid Option \n")
         
-##################          
+#### ####          
 
 sx_train, sx_test, sy_train, sy_test = train_test_split(da['text'],da['Y'],train_size = 0.7)
 
@@ -151,7 +151,7 @@ models(tfidf_X_train, tfidf_X_test, tfidf_Y_train, tfidf_Y_test,4)
 models(tfidf_X_train, tfidf_X_test, tfidf_Y_train, tfidf_Y_test,5)
 models(tfidf_X_train, tfidf_X_test, tfidf_Y_train, tfidf_Y_test,6)
 
-##################
+#### ####
 
 ## Bigram Model 
 
@@ -165,7 +165,7 @@ models(ngram_X_train, ngram_X_test, tfidf_Y_train, tfidf_Y_test,1)
 
 ##xx Bigram Model
 
-                  ######## Word2Vec
+                  ### Word2Vec ###
 
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
@@ -181,7 +181,7 @@ wv_corp_tok = [nltk.word_tokenize(str(sent)) for sent in wv_corp]
 wv_mod = gensim.models.Word2Vec(wv_corp_tok, min_count = 2, size = 70, workers = 10)      # min_count --> if prerent atlleast once we include it
 wv_mod.train(wv_corp_tok,total_examples = len(wv_corp_tok),epochs = 10)
 
-                #########  Keras
+                ### Keras ###
 
 from keras.preprocessing.text import one_hot, Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -192,7 +192,7 @@ from keras.layers import LSTM, Conv1D, MaxPooling1D, GlobalMaxPooling1D, Dropout
 
 vc = len(set(nltk.word_tokenize(str(list(da.text)))))
     
-## Vectorising by 1-hot encoding
+## Integer encoding by 1-hot encoding
 
 oh_X_train = [one_hot(sx_train[i], vc) for i in sx_train.index]
 oh_X_test = [one_hot(sx_test[i], vc) for i in sx_test.index]
@@ -202,31 +202,11 @@ oh_X_len = max(max([len(i) for i in oh_X_train]) , max([len(i) for i in oh_X_tes
 oh_X_train_pad = pad_sequences(oh_X_train, oh_X_len, padding = 'post')
 oh_X_test_pad = pad_sequences(oh_X_test, oh_X_len, padding = 'post')
 
-##xx Vectorising by 1-hot encoding
-
-## Vectorising by Tokenizer()
-
-tok = Tokenizer(num_words = vc)
-tok.fit_on_texts(sx_train)
-
-tok_X_train = tok.texts_to_sequences(sx_train)
-tok_X_test = tok.texts_to_sequences(sx_test)
-
-vocab_size = len(tok.word_index) + 1
-
-tok_X_len = max(max([len(i) for i in tok_X_train]) , max([len(i) for i in tok_X_test]))
-
-tok_X_train_pad = pad_sequences(tok_X_train, tok_X_len, padding = 'post')
-tok_X_test_pad = pad_sequences(tok_X_test, tok_X_len, padding = 'post')
-
-##xx Vectorising by Tokenizer()
-
 def deep1(x_train, x_test, y_train, y_test, vc, mlen):
     model = Sequential()
     model.add(Embedding(round(vc*1.5), 70, input_length = mlen))
     model.add(GlobalMaxPooling1D())
-    model.add(Dense(100, activation='relu'))
-    model.add(Dense(50, activation='relu'))
+    model.add(Dense(20, activation='relu'))
     model.add(Dense(1, activation='sigmoid'))
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['acc'])
     print(model.summary())
@@ -239,10 +219,8 @@ def deep1(x_train, x_test, y_train, y_test, vc, mlen):
     plot_roc_curve(sy_test, y_pred,'')
 
 deep1(oh_X_train_pad, oh_X_test_pad, sy_train, sy_test, vc, oh_X_len)   
-deep1(tok_X_train_pad, tok_X_test_pad, sy_train, sy_test, vocab_size, tok_X_len)
 
-
-                ############# GloVE pretrained
+                ### GloVE pretrained ###
                 
 t = Tokenizer()
 t.fit_on_texts(sx_train)
@@ -271,16 +249,11 @@ for word, i in t.word_index.items():
     if embedding_vector is not  None:
         embedding_matrix[i] = embedding_vector
 
-# Check how many elements are non-zero
-#nonzero_elements = np.count_nonzero(np.count_nonzero(embedding_matrix, axis=1))
-#print(nonzero_elements / vocab_size)
-
 print("\nUsing GloVe Pretrained Weights\n\n")
 
 model = Sequential()
 model.add(Embedding(vocab_size, 100, weights = [embedding_matrix], input_length = tok_X_len, trainable = True))
 model.add(GlobalMaxPooling1D())
-model.add(Dense(50, activation='relu'))
 model.add(Dense(20, activation='relu'))
 model.add(Dense(1, activation='sigmoid'))
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['acc'])
@@ -346,9 +319,7 @@ model = Sequential()
 model.add(Embedding(embedding_matrix.shape[0], embedding_matrix.shape[1], weights=[embedding_matrix], input_length = max_length, trainable = True))
 model.add(Conv1D(filters = 128, kernel_size = 5, activation='relu'))
 model.add(GlobalMaxPooling1D())
-model.add(Dense(10, activation='relu',input_shape=(vocab_size,)))
-model.add(Dense(20, activation='relu'))
-model.add(Dense(10, activation='relu'))
+model.add(Dense(20, activation='relu',input_shape=(vocab_size,)))
 model.add(Dense(1, activation='sigmoid'))
 model.add(Activation('softmax'))
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
